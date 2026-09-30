@@ -143,7 +143,7 @@ In a recursive run this serializes scripts across workspace projects as well as 
 
 :::note
 
-For `pnpm run`, `-s` is the shorthand for `--sequential`. Everywhere else in the CLI, `-s` remains the shorthand for `--reporter=silent`. The long form `--silent` is unaffected in all commands.
+For `pnpm run`, `-s` is the shorthand for `--sequential`. This includes the `pnpm <script>` shorthand, so `pnpm -s build` is `pnpm run -s build`. Everywhere else in the CLI, `-s` remains the shorthand for `--reporter=silent`. The long form `--silent` is unaffected in all commands.
 
 :::
 

@@ -317,6 +317,41 @@ fn if_present_flag_rejects_non_script_commands() {
         .expect_err("install rejects --if-present at parse time");
 }
 
+/// `pnpm -s <script>` is `pnpm run -s <script>` in pnpm: the fallback
+/// inherits `run`'s shorthand table, where `-s` is `--sequential`
+/// (pnpm/pnpm#16446).
+#[test]
+fn sequential_flag_parses_before_fallback_command() {
+    for argv in [["pacquet", "-s", "lint"], ["pacquet", "--sequential", "lint"]] {
+        let parsed = CliArgs::try_parse_from(argv).expect("parses top-level --sequential");
+        assert!(parsed.workspace.execution.sequential, "argv: {argv:?}");
+        assert!(
+            matches!(&parsed.command, CliCommand::External(command) if command.as_slice() == ["lint"]),
+            "argv: {argv:?}",
+        );
+        parsed.validate_command_scoped_global_options().expect("fallback command accepts flag");
+    }
+    let parsed = CliArgs::try_parse_from(["pacquet", "--sequential", "run", "lint"])
+        .expect("parses top-level --sequential before run");
+    assert!(parsed.workspace.execution.sequential);
+    parsed.validate_command_scoped_global_options().expect("run accepts flag");
+}
+
+#[test]
+fn sequential_flag_rejects_non_run_commands() {
+    for argv in [
+        ["pacquet", "--sequential", "install"].as_slice(),
+        ["pacquet", "--sequential", "exec", "ls"].as_slice(),
+    ] {
+        let parsed =
+            CliArgs::try_parse_from(argv).expect("global parser accepts compatibility flag");
+        let err = parsed
+            .validate_command_scoped_global_options()
+            .expect_err("non-run command rejects flag");
+        assert_eq!(err.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+}
+
 #[test]
 fn report_summary_global_flag_parses_for_publish() {
     for argv in [

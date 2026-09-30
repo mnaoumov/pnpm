@@ -1,7 +1,7 @@
 use super::expand_universal_shorthands;
 use crate::{
     boolean_negations::with_boolean_negations,
-    cli_args::{CliArgs, reporter::ReporterType},
+    cli_args::{CliArgs, cli_command::CliCommand, reporter::ReporterType},
     flag_relocation::relocate_pre_subcommand_flags,
 };
 use clap::{CommandFactory, FromArgMatches};
@@ -93,6 +93,20 @@ fn short_s_is_left_for_the_script_fallback() {
     for command in ["test", "start", "stop"] {
         assert_eq!(expand(&["pnpm", command, "-s"]), ["pnpm", command, "-s"]);
     }
+}
+
+/// Ahead of the script name `-s` belongs to `run`, which the fallback
+/// resolves to, so it has to parse there as `--sequential` rather than be
+/// rejected as an unknown top-level argument (pnpm/pnpm#16446).
+#[test]
+fn short_s_before_the_script_fallback_parses_as_sequential() {
+    let args = parse(&["pnpm", "-s", "my-script"]);
+    assert!(args.workspace.execution.sequential);
+    assert!(args.output.presentation.reporter.is_none());
+    assert!(matches!(
+        &args.command,
+        CliCommand::External(command) if command.as_slice() == ["my-script"],
+    ));
 }
 
 #[test]

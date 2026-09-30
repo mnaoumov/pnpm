@@ -331,6 +331,12 @@ pub struct WorkspaceExecutionArgs {
     /// Don't fail when the named script is undefined.
     #[clap(long = "if-present", hide = true)]
     pub if_present: bool,
+    /// Run the matched scripts one at a time. The top-level spelling of
+    /// `run`'s own `--sequential` / `-s`, which the `pnpm <script>`
+    /// fallback inherits the way pnpm's `run` shorthand table does
+    /// (`pnpm -s build`); merged with the flag `run` declares itself.
+    #[clap(long, short = 's', hide = true)]
+    pub sequential: bool,
 }
 
 #[derive(Debug, Clone, clap::Args)]

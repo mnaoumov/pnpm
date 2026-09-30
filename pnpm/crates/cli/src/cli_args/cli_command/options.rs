@@ -53,6 +53,9 @@ impl CliArgs {
         if self.workspace.execution.if_present {
             self.validate_if_present_top_level_option()?;
         }
+        if self.workspace.execution.sequential {
+            self.validate_sequential_top_level_option()?;
+        }
         if self.workspace.ordering.parallel {
             self.validate_parallel_global_option()?;
         }
@@ -180,6 +183,18 @@ impl CliArgs {
             CliCommand::Exec(_) => Err(Self::unexpected_argument_error("--if-present")),
             _ => self.validate_run_scoped_global_option("--if-present"),
         }
+    }
+
+    /// Only `run` declares `--sequential`, and only `run` and the
+    /// `pnpm <script>` fallback that resolves to it take the top-level
+    /// spelling. The universal-shorthand pass has already turned `-s`
+    /// into `--reporter=silent` for every other command, so what reaches
+    /// here elsewhere is a literal `--sequential`, which pnpm rejects.
+    fn validate_sequential_top_level_option(&self) -> Result<(), clap::Error> {
+        if matches!(self.command, CliCommand::Run(_) | CliCommand::External(_)) {
+            return Ok(());
+        }
+        Err(Self::unexpected_argument_error("--sequential"))
     }
 
     fn validate_run_scoped_global_option(&self, option: &str) -> Result<(), clap::Error> {

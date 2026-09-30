@@ -481,6 +481,39 @@ scripts:
     drop(root);
 }
 
+/// `-s` / `--sequential` ahead of a script name without `run` belong to
+/// `run`, which the `pnpm <script>` fallback resolves to: the script runs
+/// and does not receive the flag (pnpm/pnpm#16446).
+#[test]
+fn top_level_fallback_accepts_sequential_before_the_script_name() {
+    for flag in ["-s", "--sequential"] {
+        let CommandTempCwd { pacquet, root, workspace, .. } = CommandTempCwd::init();
+        let marker = workspace.join("ran.txt");
+        fs::write(
+            workspace.join("package.json"),
+            json!({
+                "name": "project",
+                "version": "0.0.0",
+                "scripts": {
+                    "lint": r#"node -e "require('fs').writeFileSync(process.env.MARKER_PATH, process.argv.slice(1).join(' '))" --"#,
+                },
+            })
+            .to_string(),
+        )
+        .expect("write package.json");
+
+        pacquet
+            .with_env("MARKER_PATH", marker.to_string_lossy().as_ref())
+            .with_arg(flag)
+            .with_arg("lint")
+            .assert()
+            .success();
+        assert_eq!(fs::read_to_string(&marker).expect("read marker"), "", "flag: {flag}");
+
+        drop(root);
+    }
+}
+
 /// npm's `--prefix` is accepted as a spelling of `--dir`
 /// (<https://github.com/pnpm/pnpm/issues/13583>) — ahead of the
 /// subcommand, where pnpm's own options live. Past the script name the
